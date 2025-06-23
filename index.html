@@ -4,424 +4,309 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Penjadwal Ronda Malam</title>
+    
     <style>
-        /* Reset dan Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* --- Pengaturan Dasar & Font --- */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+            --highlight-color: #fff3cd;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
             padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
+            padding: 20px;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
-        .header {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
-            padding: 30px;
-            text-align: center;
+        h1, h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        h2 {
+            margin-top: 40px;
+            color: var(--secondary-color);
+            font-size: 1.5em;
         }
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 300;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1em;
-        }
-
-        /* Form Styles */
-        .form-section {
-            padding: 30px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
+        /* --- Form Input --- */
+        .form-container {
+            margin-bottom: 30px;
         }
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
         }
-
+        
         .form-group {
             display: flex;
             flex-direction: column;
         }
 
-        .form-group label {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #2c3e50;
-            font-size: 0.95em;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 1em;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 120px;
-            font-family: inherit;
-        }
-
-        .generate-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.1em;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            align-self: flex-start;
-        }
-
-        .generate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        /* Results Section */
-        .results-section {
-            padding: 30px;
-            display: none;
-        }
-
-        .summary-card {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .summary-card h3 {
-            font-size: 1.3em;
-            margin-bottom: 10px;
-        }
-
-        .summary-card p {
-            font-size: 1.1em;
-            opacity: 0.95;
-        }
-
-        /* Monthly Schedule Styles */
-        .month-section {
-            margin-bottom: 40px;
-        }
-
-        .month-header {
-            background: linear-gradient(135deg, #495057, #6c757d);
-            color: white;
-            padding: 20px;
-            border-radius: 10px 10px 0 0;
-            font-size: 1.4em;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .month-content {
-            border: 2px solid #e9ecef;
-            border-top: none;
-            border-radius: 0 0 10px 10px;
-            padding: 20px;
-            background: white;
-        }
-
-        /* Grid Layout untuk Kolom Dinamis */
-        .schedule-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .schedule-column {
-            background: #f8f9fa;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #e9ecef;
-        }
-
-        .schedule-table {
-            width: 100%;
-        }
-
-        .schedule-table th {
-            background: #6c757d;
-            color: white;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-        }
-
-        .schedule-table td {
-            padding: 12px;
-            border-bottom: 1px solid #e9ecef;
-            transition: background-color 0.2s ease;
-        }
-
-        .schedule-table tr:hover td {
-            background-color: #e3f2fd;
-        }
-
-        /* Highlight untuk hari ini */
-        .today-row td {
-            background-color: #fff3cd !important;
-            border-left: 4px solid #ffc107;
-            font-weight: 600;
-        }
-
-        /* Export Section */
-        .export-section {
-            background: #f8f9fa;
-            padding: 30px;
-            border-top: 1px solid #e9ecef;
-        }
-
-        .export-section h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-
-        .export-textarea {
-            width: 100%;
-            height: 200px;
-            padding: 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            resize: vertical;
-            margin-bottom: 15px;
-        }
-
-        .copy-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            margin-right: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .copy-btn:hover {
-            background: #218838;
-            transform: translateY(-1px);
-        }
-
-        .instructions {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 0 8px 8px 0;
-        }
-
-        .instructions h4 {
-            color: #1976d2;
-            margin-bottom: 10px;
-        }
-
-        .instructions ol {
-            margin-left: 20px;
-        }
-
-        .instructions li {
+        label {
+            font-weight: bold;
             margin-bottom: 5px;
         }
 
-        /* Print Styles */
+        input[type="date"],
+        input[type="number"],
+        textarea {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            grid-column: 1 / -1; /* Tombol memenuhi lebar grid */
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        
+        /* --- Tampilan Output --- */
+        #output {
+            margin-top: 30px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Ringkasan Jadwal */
+        #ringkasanJadwal {
+            background-color: #e2f0ff;
+            border-left: 5px solid var(--primary-color);
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        /* Kontainer untuk setiap bulan yang berisi kolom-kolom jadwal */
+        .bulan-container {
+            display: flex;
+            flex-wrap: wrap; /* Kunci responsivitas: bungkus ke baris baru jika tidak muat */
+            gap: 20px;
+        }
+        
+        /* Kolom visual yang menampung maksimal 10 baris jadwal */
+        .jadwal-kolom {
+            flex: 1; /* Kolom akan membagi ruang secara merata */
+            min-width: 300px; /* Lebar minimum sebelum pindah ke baris baru */
+        }
+        
+        .jadwal-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+
+        .jadwal-table th, .jadwal-table td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+
+        .jadwal-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        /* Sorotan untuk baris hari ini */
+        .hari-ini {
+            background-color: var(--highlight-color) !important;
+            font-weight: bold;
+            border-left: 4px solid #ffc107;
+        }
+
+        /* --- Area Ekspor & Instruksi --- */
+        .export-container {
+            margin-top: 40px;
+        }
+
+        #exportText {
+            width: 100%;
+            min-height: 150px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.9em;
+            background-color: #e9ecef;
+        }
+
+        .export-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .salin-btn {
+            padding: 10px 15px;
+            font-size: 1rem;
+            color: #fff;
+            background-color: var(--secondary-color);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .salin-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .instructions {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f4f4f4;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        .instructions ol {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        /* --- Style untuk Cetak (Print-Friendly) --- */
         @media print {
             body {
-                background: white;
-                color: black;
                 padding: 0;
+                font-size: 10pt; /* Ukuran font lebih kecil untuk cetak */
+                background-color: #fff; /* Latar putih */
+                color: #000;
             }
-
             .container {
                 box-shadow: none;
-                border-radius: 0;
+                border: none;
+                padding: 0;
+                margin: 0;
+                max-width: 100%;
             }
-
-            .form-section,
-            .export-section,
-            .generate-btn,
-            .copy-btn {
+            
+            /* Sembunyikan elemen yang tidak perlu dicetak */
+            .form-container, .export-container, .btn, #ringkasanJadwal, h1 {
                 display: none !important;
             }
-
-            .header {
-                background: white;
-                color: black;
-                border-bottom: 2px solid black;
+            
+            #output, .bulan-container, .jadwal-kolom {
+                display: block !important; /* Pastikan semua wrapper terlihat */
+            }
+            
+            .bulan-container {
+                page-break-before: auto;
+                page-break-inside: avoid;
+            }
+            
+            .jadwal-table {
+                width: 100%;
+                border: 1px solid #000;
             }
 
-            .month-header {
-                background: white;
-                color: black;
-                border: 2px solid black;
+            .jadwal-table th, .jadwal-table td {
+                border: 1px solid #000; /* Border hitam jelas */
             }
-
-            .schedule-table th {
-                background: white;
-                color: black;
-                border: 1px solid black;
+            
+            h2 {
+                font-size: 14pt;
+                color: #000;
+                border: none;
+                page-break-after: avoid;
+                page-break-before: always; /* Setiap bulan mulai di halaman baru */
             }
-
-            .schedule-table td {
-                border: 1px solid black;
+            h2:first-of-type {
+                 page-break-before: auto;
             }
-
-            .today-row td {
-                background-color: #f0f0f0 !important;
-            }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .schedule-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-
-            body {
-                padding: 10px;
-            }
-        }
-
-        /* Animasi Loading */
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 30px;
-            height: 30px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <!-- Header Section -->
-        <div class="header">
-            <h1>🌙 Penjadwal Ronda Malam</h1>
-            <p>Sistem Penjadwalan Tim Ronda Otomatis dengan Export Excel</p>
+        <h1>Generator Jadwal Ronda Malam</h1>
+        
+        <div class="form-container">
+            <form id="jadwalForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="tanggalMulai">Tanggal Mulai</label>
+                        <input type="date" id="tanggalMulai" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tanggalBerakhir">Tanggal Berakhir</label>
+                        <input type="date" id="tanggalBerakhir" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="jumlahTim">Jumlah Tim</label>
+                        <input type="number" id="jumlahTim" value="16" min="1" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="interval">Interval Pergantian (hari)</label>
+                        <input type="number" id="interval" value="1" min="1" required>
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="namaTim">Nama Tim (satu per baris, kosongkan untuk otomatis)</label>
+                        <textarea id="namaTim" placeholder="Contoh:&#10;Tim Alpha&#10;Tim Bravo&#10;Tim Charlie"></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn">Buat Jadwal</button>
+            </form>
         </div>
 
-        <!-- Form Input Section -->
-        <div class="form-section">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="startDate">Tanggal Mulai:</label>
-                    <input type="date" id="startDate" required>
+        <div id="output" class="hidden">
+            <div id="ringkasanJadwal"></div>
+            <div id="jadwalContainer">
                 </div>
-                
-                <div class="form-group">
-                    <label for="endDate">Tanggal Berakhir:</label>
-                    <input type="date" id="endDate" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="teamCount">Jumlah Tim:</label>
-                    <input type="number" id="teamCount" value="16" min="1" max="50" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="interval">Interval Pergantian (hari):</label>
-                    <input type="number" id="interval" value="1" min="1" max="30" required>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="teamNames">Nama Tim (satu nama per baris, kosongkan untuk auto-generate):</label>
-                <textarea id="teamNames" placeholder="Contoh:&#10;Tim A&#10;Tim B&#10;Tim C&#10;...atau biarkan kosong untuk Tim 1, Tim 2, dll."></textarea>
-            </div>
-            
-            <button class="generate-btn" onclick="generateSchedule()">🔄 Buat Jadwal</button>
-        </div>
 
-        <!-- Results Section -->
-        <div class="results-section" id="resultsSection">
-            <!-- Summary akan diisi oleh JavaScript -->
-            <div id="summaryContainer"></div>
-            
-            <!-- Schedule akan diisi oleh JavaScript -->
-            <div id="scheduleContainer"></div>
-            
-            <!-- Export Section -->
-            <div class="export-section">
-                <h3>📊 Export untuk Excel</h3>
-                <textarea id="exportText" class="export-textarea" readonly placeholder="Data export akan muncul di sini..."></textarea>
-                <button class="copy-btn" onclick="copyExportText()">📋 Salin Teks</button>
-                
+            <div class="export-container">
+                <h2>Ekspor ke Excel</h2>
+                <textarea id="exportText" readonly></textarea>
+                <div class="export-controls">
+                    <button id="salinBtn" class="salin-btn">Salin Teks</button>
+                </div>
                 <div class="instructions">
-                    <h4>Cara Import ke Excel:</h4>
+                    <strong>Cara menggunakan di Excel (Text to Columns):</strong>
                     <ol>
-                        <li><strong>Salin</strong> teks dari kotak di atas (gunakan tombol "Salin Teks")</li>
-                        <li><strong>Buka Excel</strong> dan tempelkan di kolom A</li>
-                        <li>Pilih kolom A yang berisi data → menu <strong>Data</strong> → <strong>Text to Columns</strong></li>
-                        <li>Pilih <strong>Delimited</strong> → Next → centang <strong>Comma ( , )</strong> → Finish</li>
-                        <li>Data akan terbagi ke kolom A (tanggal) dan B (tim)</li>
+                        <li>Salin seluruh isi dari kotak teks di atas.</li>
+                        <li>Tempel (Paste) di sel A1 pada lembar kerja Excel.</li>
+                        <li>Pilih seluruh kolom A, lalu pergi ke menu <strong>Data</strong> &rarr; <strong>Text to Columns</strong>.</li>
+                        <li>Pilih <strong>Delimited</strong>, lalu klik <strong>Next</strong>.</li>
+                        <li>Beri centang pada <strong>Comma</strong> (koma) dan hilangkan centang lainnya. Klik <strong>Finish</strong>.</li>
                     </ol>
                 </div>
             </div>
@@ -429,324 +314,251 @@
     </div>
 
     <script>
-        // Inisialisasi tanggal default saat halaman dimuat
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeDates();
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // --- Referensi Elemen DOM ---
+        const form = document.getElementById('jadwalForm');
+        const tanggalMulaiEl = document.getElementById('tanggalMulai');
+        const tanggalBerakhirEl = document.getElementById('tanggalBerakhir');
+        const jumlahTimEl = document.getElementById('jumlahTim');
+        const intervalEl = document.getElementById('interval');
+        const namaTimEl = document.getElementById('namaTim');
+        const outputEl = document.getElementById('output');
+        const ringkasanJadwalEl = document.getElementById('ringkasanJadwal');
+        const jadwalContainerEl = document.getElementById('jadwalContainer');
+        const exportTextEl = document.getElementById('exportText');
+        const salinBtn = document.getElementById('salinBtn');
+
+        // --- Inisialisasi & Pengaturan Default ---
+        
+        // Fungsi untuk memformat tanggal ke YYYY-MM-DD untuk input date picker
+        const formatDateForInput = (date) => {
+            const d = new Date(date);
+            let month = '' + (d.getMonth() + 1);
+            let day = '' + d.getDate();
+            const year = d.getFullYear();
+
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+
+            return [year, month, day].join('-');
+        };
+
+        // Atur tanggal default
+        const hariIni = new Date();
+        const tigaPuluhHariLagi = new Date();
+        tigaPuluhHariLagi.setDate(hariIni.getDate() + 30);
+
+        tanggalMulaiEl.value = formatDateForInput(hariIni);
+        tanggalBerakhirEl.value = formatDateForInput(tigaPuluhHariLagi);
+        
+        // --- Helper Functions ---
+
+        /**
+         * Memformat objek Date ke string yang mudah dibaca.
+         * @param {Date} date - Objek tanggal.
+         * @param {string} format - 'DD/MM/YYYY' atau 'full' (e.g., "Senin, 23 Juni 2025").
+         * @returns {string} Tanggal yang diformat.
+         */
+        const formatTanggal = (date, format) => {
+            if (format === 'DD/MM/YYYY') {
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            }
+            if (format === 'full') {
+                 return new Intl.DateTimeFormat('id-ID', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                }).format(date);
+            }
+             if (format === 'month-year') {
+                 return new Intl.DateTimeFormat('id-ID', { 
+                    year: 'numeric', 
+                    month: 'long'
+                }).format(date);
+            }
+            return date.toString();
+        };
+
+        /**
+         * Memeriksa apakah tanggal yang diberikan adalah hari ini.
+         * @param {Date} date - Objek tanggal.
+         * @returns {boolean} True jika tanggal adalah hari ini.
+         */
+        const isToday = (date) => {
+            const today = new Date();
+            return date.getDate() === today.getDate() &&
+                   date.getMonth() === today.getMonth() &&
+                   date.getFullYear() === today.getFullYear();
+        };
+
+        // --- Event Listeners ---
+        form.addEventListener('submit', function(event) {
+            event.preventDefault(); // Mencegah form submit dan refresh halaman
+            buatJadwal();
         });
 
-        // Fungsi untuk mengatur tanggal default
-        function initializeDates() {
-            const today = new Date();
-            const futureDate = new Date(today);
-            futureDate.setDate(today.getDate() + 30);
-            
-            // Format tanggal untuk input HTML5 (YYYY-MM-DD)
-            document.getElementById('startDate').value = formatDateForInput(today);
-            document.getElementById('endDate').value = formatDateForInput(futureDate);
-        }
-
-        // Fungsi untuk format tanggal ke format input HTML5
-        function formatDateForInput(date) {
-            return date.toISOString().split('T')[0];
-        }
-
-        // Fungsi untuk format tanggal ke DD/MM/YYYY
-        function formatDateDDMMYYYY(date) {
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-
-        // Fungsi untuk mendapatkan nama hari dalam bahasa Indonesia
-        function getDayName(date) {
-            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-            return days[date.getDay()];
-        }
-
-        // Fungsi untuk mendapatkan nama bulan dalam bahasa Indonesia
-        function getMonthName(date) {
-            const months = [
-                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-            ];
-            return months[date.getMonth()];
-        }
-
-        // Fungsi utama untuk generate jadwal
-        function generateSchedule() {
-            try {
-                // Ambil input dari form
-                const startDate = new Date(document.getElementById('startDate').value);
-                const endDate = new Date(document.getElementById('endDate').value);
-                const teamCount = parseInt(document.getElementById('teamCount').value);
-                const interval = parseInt(document.getElementById('interval').value);
-                const teamNamesInput = document.getElementById('teamNames').value.trim();
-
-                // Validasi input
-                if (startDate >= endDate) {
-                    alert('Tanggal berakhir harus setelah tanggal mulai!');
-                    return;
-                }
-
-                if (teamCount < 1 || teamCount > 50) {
-                    alert('Jumlah tim harus antara 1-50!');
-                    return;
-                }
-
-                if (interval < 1) {
-                    alert('Interval pergantian minimal 1 hari!');
-                    return;
-                }
-
-                // Generate nama tim
-                const teamNames = generateTeamNames(teamNamesInput, teamCount);
-
-                // Generate jadwal
-                const schedule = createSchedule(startDate, endDate, teamNames, interval);
-
-                // Tampilkan hasil
-                displayResults(schedule, teamNames);
-
-                // Generate export text
-                generateExportText(schedule);
-
-                // Tampilkan section hasil
-                document.getElementById('resultsSection').style.display = 'block';
-                
-                // Scroll ke hasil
-                document.getElementById('resultsSection').scrollIntoView({ 
-                    behavior: 'smooth' 
-                });
-
-            } catch (error) {
-                console.error('Error generating schedule:', error);
-                alert('Terjadi kesalahan saat membuat jadwal. Silakan coba lagi.');
-            }
-        }
-
-        // Fungsi untuk generate nama tim
-        function generateTeamNames(input, count) {
-            if (input) {
-                // Jika ada input, split berdasarkan baris baru
-                const names = input.split('\n')
-                    .map(name => name.trim())
-                    .filter(name => name.length > 0);
-                
-                // Jika jumlah nama kurang dari count, tambahkan auto-generated
-                while (names.length < count) {
-                    names.push(`Tim ${names.length + 1}`);
-                }
-                
-                return names.slice(0, count); // Ambil sesuai count
-            } else {
-                // Auto-generate semua nama tim
-                const names = [];
-                for (let i = 1; i <= count; i++) {
-                    names.push(`Tim ${i}`);
-                }
-                return names;
-            }
-        }
-
-        // Fungsi untuk membuat jadwal
-        function createSchedule(startDate, endDate, teamNames, interval) {
-            const schedule = [];
-            const currentDate = new Date(startDate);
-            let currentTeamIndex = 0;
-            let dayCount = 0;
-
-            while (currentDate <= endDate) {
-                // Tentukan tim yang bertugas
-                const teamIndex = Math.floor(dayCount / interval) % teamNames.length;
-                
-                schedule.push({
-                    date: new Date(currentDate),
-                    team: teamNames[teamIndex],
-                    teamIndex: teamIndex
-                });
-
-                // Pindah ke hari berikutnya
-                currentDate.setDate(currentDate.getDate() + 1);
-                dayCount++;
-            }
-
-            return schedule;
-        }
-
-        // Fungsi untuk menampilkan hasil
-        function displayResults(schedule, teamNames) {
-            // Tampilkan summary
-            displaySummary(schedule);
-
-            // Group schedule berdasarkan bulan
-            const monthlySchedule = groupScheduleByMonth(schedule);
-
-            // Tampilkan jadwal per bulan
-            displayMonthlySchedule(monthlySchedule);
-        }
-
-        // Fungsi untuk menampilkan summary
-        function displaySummary(schedule) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            // Cari jadwal selanjutnya
-            let nextSchedule = null;
-            for (const entry of schedule) {
-                if (entry.date >= today) {
-                    nextSchedule = entry;
-                    break;
-                }
-            }
-
-            let summaryHTML = '<div class="summary-card">';
-            
-            if (nextSchedule) {
-                const dateStr = formatDateDDMMYYYY(nextSchedule.date);
-                const dayName = getDayName(nextSchedule.date);
-                summaryHTML += `
-                    <h3>📅 Jadwal Selanjutnya</h3>
-                    <p><strong>${nextSchedule.team}</strong> pada ${dayName}, ${dateStr}</p>
-                `;
-            } else {
-                summaryHTML += `
-                    <h3>✅ Jadwal Selesai</h3>
-                    <p>Semua jadwal telah berlalu</p>
-                `;
-            }
-            
-            summaryHTML += '</div>';
-            
-            document.getElementById('summaryContainer').innerHTML = summaryHTML;
-        }
-
-        // Fungsi untuk mengelompokkan jadwal berdasarkan bulan
-        function groupScheduleByMonth(schedule) {
-            const monthlyData = {};
-
-            schedule.forEach(entry => {
-                const monthKey = `${entry.date.getFullYear()}-${entry.date.getMonth()}`;
-                const monthName = `${getMonthName(entry.date)} ${entry.date.getFullYear()}`;
-
-                if (!monthlyData[monthKey]) {
-                    monthlyData[monthKey] = {
-                        name: monthName,
-                        entries: []
-                    };
-                }
-
-                monthlyData[monthKey].entries.push(entry);
+        salinBtn.addEventListener('click', function() {
+            exportTextEl.select();
+            document.execCommand('copy'); // Metode fallback
+            navigator.clipboard.writeText(exportTextEl.value).then(() => {
+                const originalText = salinBtn.textContent;
+                salinBtn.textContent = 'Tersalin!';
+                setTimeout(() => {
+                    salinBtn.textContent = originalText;
+                }, 1500);
+            }).catch(err => {
+                console.error('Gagal menyalin teks: ', err);
             });
+        });
 
-            return monthlyData;
-        }
-
-        // Fungsi untuk menampilkan jadwal bulanan
-        function displayMonthlySchedule(monthlySchedule) {
-            let scheduleHTML = '';
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            Object.keys(monthlySchedule).sort().forEach(monthKey => {
-                const monthData = monthlySchedule[monthKey];
-                
-                scheduleHTML += `
-                    <div class="month-section">
-                        <div class="month-header">
-                            📅 ${monthData.name}
-                        </div>
-                        <div class="month-content">
-                            ${createMonthGrid(monthData.entries, today)}
-                        </div>
-                    </div>
-                `;
-            });
-
-            document.getElementById('scheduleContainer').innerHTML = scheduleHTML;
-        }
-
-        // Fungsi untuk membuat grid kolom dalam setiap bulan
-        function createMonthGrid(entries, today) {
-            const maxRowsPerColumn = 10;
-            const columns = [];
+        // --- Fungsi Logika Utama ---
+        function buatJadwal() {
+            // 1. Ambil nilai dari form
+            const tanggalMulai = new Date(tanggalMulaiEl.value + 'T00:00:00');
+            const tanggalBerakhir = new Date(tanggalBerakhirEl.value + 'T00:00:00');
+            const jumlahTim = parseInt(jumlahTimEl.value, 10);
+            const interval = parseInt(intervalEl.value, 10);
             
-            // Bagi entries ke dalam kolom-kolom
-            for (let i = 0; i < entries.length; i += maxRowsPerColumn) {
-                columns.push(entries.slice(i, i + maxRowsPerColumn));
+            let daftarNamaTim = namaTimEl.value.trim().split('\n').filter(nama => nama.trim() !== '');
+            
+            // 2. Jika nama tim kosong, buat nama default
+            if (daftarNamaTim.length === 0) {
+                daftarNamaTim = [];
+                for (let i = 1; i <= jumlahTim; i++) {
+                    daftarNamaTim.push(`Tim ${i}`);
+                }
+            }
+            
+            // 3. Buat daftar jadwal
+            const jadwalLengkap = [];
+            let tanggalSekarang = new Date(tanggalMulai);
+            let indexTim = 0;
+            
+            while (tanggalSekarang <= tanggalBerakhir) {
+                const timBertugas = daftarNamaTim[indexTim];
+                
+                for(let i = 0; i < interval && tanggalSekarang <= tanggalBerakhir; i++) {
+                    jadwalLengkap.push({
+                        tanggal: new Date(tanggalSekarang),
+                        tim: timBertugas
+                    });
+                    tanggalSekarang.setDate(tanggalSekarang.getDate() + 1);
+                }
+                
+                indexTim = (indexTim + 1) % daftarNamaTim.length; // Ulangi dari tim pertama
             }
 
-            let gridHTML = '<div class="schedule-grid">';
-            
-            columns.forEach((columnEntries, columnIndex) => {
-                gridHTML += `
-                    <div class="schedule-column">
-                        <table class="schedule-table">
-                            <thead>
-                                <tr>
-                                    <th>Tanggal, Hari</th>
-                                    <th>Tim Bertugas</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
+            // 4. Render output ke halaman
+            renderJadwal(jadwalLengkap);
+        }
 
-                columnEntries.forEach(entry => {
-                    const dateStr = formatDateDDMMYYYY(entry.date);
-                    const dayName = getDayName(entry.date);
-                    const isToday = entry.date.getTime() === today.getTime();
-                    const rowClass = isToday ? 'today-row' : '';
+        // --- Fungsi Render ---
+        function renderJadwal(jadwal) {
+            // Kosongkan output sebelumnya
+            jadwalContainerEl.innerHTML = '';
+            exportTextEl.value = '';
 
-                    gridHTML += `
-                        <tr class="${rowClass}">
-                            <td>${dayName}, ${dateStr}</td>
-                            <td><strong>${entry.team}</strong></td>
-                        </tr>
+            if (jadwal.length === 0) {
+                jadwalContainerEl.innerHTML = '<p>Tidak ada jadwal untuk ditampilkan. Silakan periksa kembali input Anda.</p>';
+                outputEl.classList.add('hidden');
+                return;
+            }
+
+            // A. Kelompokkan jadwal per bulan
+            const jadwalPerBulan = jadwal.reduce((acc, item) => {
+                const bulanTahun = formatTanggal(item.tanggal, 'month-year');
+                if (!acc[bulanTahun]) {
+                    acc[bulanTahun] = [];
+                }
+                acc[bulanTahun].push(item);
+                return acc;
+            }, {});
+
+            // B. Render setiap bulan
+            for (const bulan in jadwalPerBulan) {
+                const dataBulanIni = jadwalPerBulan[bulan];
+                
+                // Buat header bulan
+                const headerBulan = document.createElement('h2');
+                headerBulan.textContent = bulan;
+                jadwalContainerEl.appendChild(headerBulan);
+
+                // Buat kontainer untuk kolom-kolom bulan ini
+                const bulanContainer = document.createElement('div');
+                bulanContainer.className = 'bulan-container';
+                
+                // C. Bagi data bulan ini menjadi beberapa kolom (maksimal 10 baris per kolom)
+                const ukuranKolom = 10;
+                for (let i = 0; i < dataBulanIni.length; i += ukuranKolom) {
+                    const potonganJadwal = dataBulanIni.slice(i, i + ukuranKolom);
+                    
+                    const kolomDiv = document.createElement('div');
+                    kolomDiv.className = 'jadwal-kolom';
+                    
+                    const table = document.createElement('table');
+                    table.className = 'jadwal-table';
+                    
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Tanggal, Hari</th>
+                                <th>Tim Bertugas</th>
+                            </tr>
+                        </thead>
                     `;
-                });
+                    
+                    const tbody = document.createElement('tbody');
+                    potonganJadwal.forEach(item => {
+                        const tr = document.createElement('tr');
+                        
+                        // Sorot baris 'hari ini'
+                        if (isToday(item.tanggal)) {
+                            tr.classList.add('hari-ini');
+                        }
+                        
+                        const tdTanggal = document.createElement('td');
+                        tdTanggal.textContent = formatTanggal(item.tanggal, 'full');
+                        
+                        const tdTim = document.createElement('td');
+                        tdTim.textContent = item.tim;
+                        
+                        tr.appendChild(tdTanggal);
+                        tr.appendChild(tdTim);
+                        tbody.appendChild(tr);
+                    });
+                    
+                    table.appendChild(tbody);
+                    kolomDiv.appendChild(table);
+                    bulanContainer.appendChild(kolomDiv);
+                }
 
-                gridHTML += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            });
-
-            gridHTML += '</div>';
-            return gridHTML;
-        }
-
-        // Fungsi untuk generate text export
-        function generateExportText(schedule) {
-            let exportText = '';
-            
-            schedule.forEach(entry => {
-                const dateStr = formatDateDDMMYYYY(entry.date);
-                exportText += `${dateStr},${entry.team}\n`;
-            });
-
-            document.getElementById('exportText').value = exportText;
-        }
-
-        // Fungsi untuk copy export text
-        function copyExportText() {
-            const textarea = document.getElementById('exportText');
-            textarea.select();
-            textarea.setSelectionRange(0, 99999); // Untuk mobile
-
-            try {
-                document.execCommand('copy');
-                alert('✅ Teks berhasil disalin ke clipboard!');
-            } catch (err) {
-                console.error('Error copying text:', err);
-                alert('❌ Gagal menyalin teks. Silakan copy manual dengan Ctrl+C');
+                jadwalContainerEl.appendChild(bulanContainer);
             }
-        }
 
-        // Fungsi untuk print (bonus)
-        function printSchedule() {
-            window.print();
+            // D. Tampilkan ringkasan jadwal selanjutnya
+            const hariIniTanpaWaktu = new Date();
+            hariIniTanpaWaktu.setHours(0, 0, 0, 0);
+            
+            const jadwalSelanjutnya = jadwal.find(item => item.tanggal >= hariIniTanpaWaktu);
+            if (jadwalSelanjutnya) {
+                ringkasanJadwalEl.textContent = `Jadwal Selanjutnya: ${jadwalSelanjutnya.tim} pada ${formatTanggal(jadwalSelanjutnya.tanggal, 'full')}`;
+            } else {
+                ringkasanJadwalEl.textContent = 'Tidak ada jadwal mendatang.';
+            }
+
+            // E. Isi textarea ekspor
+            const exportData = jadwal.map(item => `${formatTanggal(item.tanggal, 'DD/MM/YYYY')},${item.tim}`).join('\n');
+            exportTextEl.value = exportData;
+
+            // Tampilkan seluruh bagian output
+            outputEl.classList.remove('hidden');
         }
+    });
     </script>
 </body>
 </html>
