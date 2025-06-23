@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night Patrol Scheduler</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        /* Form styles */
+        .form-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        .form-group small {
+            margin-top: 5px;
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        /* Button styles */
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        /* Results section */
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .next-shift {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .schedule-table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .schedule-table th {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .schedule-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .schedule-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .schedule-table tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        .schedule-table tr.today {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            font-weight: 600;
+        }
+
+        .schedule-table tr.today td {
+            border-left: 4px solid #f39c12;
+        }
+
+        /* Export section */
+        .export-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .export-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .export-textarea {
+            width: 100%;
+            min-height: 150px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            background: white;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 0;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .form-section {
+                padding: 20px;
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+            }
+
+            .export-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .schedule-table th,
+            .schedule-table td {
+                padding: 8px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .header {
+                background: #2c3e50 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+
+            .form-section,
+            .export-section {
+                display: none;
+            }
+
+            .schedule-table th {
+                background: #34495e !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+
+            .schedule-table tr.today {
+                background: #fff3cd !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌙 Night Patrol Scheduler</h1>
+            <p>Organize your security patrol rotations with ease</p>
+        </div>
+
+        <div class="content">
+            <!-- Input Form Section -->
+            <div class="form-section">
+                <h2>📋 Schedule Configuration</h2>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate" required>
+                        <small>The first day of patrol rotation</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numTeams">Number of Teams</label>
+                        <input type="number" id="numTeams" min="1" max="100" value="16" required>
+                        <small>Total teams available for patrol</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rotationInterval">Rotation Interval (Days)</label>
+                        <input type="number" id="rotationInterval" min="1" max="30" value="1" required>
+                        <small>Days each team covers before rotation</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="scheduleDays">Schedule Duration (Days)</label>
+                        <input type="number" id="scheduleDays" min="1" max="365" value="30" required>
+                        <small>Total days to generate schedule for</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="teamNames">Team Names (Optional)</label>
+                    <textarea id="teamNames" placeholder="Team 1&#10;Team 2&#10;Team 3&#10;...&#10;&#10;Leave blank for auto-generated names (Team 1, Team 2, etc.)"></textarea>
+                    <small>One team name per line. If left blank, teams will be named automatically.</small>
+                </div>
+
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                <button class="btn" onclick="generateSchedule()">
+                    🚀 Generate Patrol Schedule
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section">
+                <div id="nextShift" class="next-shift"></div>
+
+                <div class="schedule-table-container">
+                    <table class="schedule-table" id="scheduleTable">
+                        <thead>
+                            <tr>
+                                <th>📅 Date</th>
+                                <th>👥 Team Assignment</th>
+                                <th>📊 Day</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Export Section -->
+                <div class="export-section">
+                    <h3>📤 Export Options</h3>
+                    <textarea id="exportTextarea" class="export-textarea" readonly placeholder="Generated CSV data will appear here..."></textarea>
+                    
+                    <div class="export-buttons">
+                        <button class="btn btn-secondary" onclick="copyToClipboard()">
+                            📋 Copy to Clipboard
+                        </button>
+                        <button class="btn btn-success" onclick="downloadCSV()">
+                            💾 Download CSV
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.print()">
+                            🖨️ Print Schedule
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default start date to today
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+            document.getElementById('startDate').value = todayString;
+            
+            // Add event listeners for real-time validation
+            document.getElementById('numTeams').addEventListener('input', validateInputs);
+            document.getElementById('rotationInterval').addEventListener('input', validateInputs);
+            document.getElementById('scheduleDays').addEventListener('input', validateInputs);
+        });
+
+        /**
+         * Validates form inputs and shows appropriate error messages
+         * This helps users understand what needs to be fixed before generating a schedule
+         */
+        function validateInputs() {
+            const errorDiv = document.getElementById('errorMessage');
+            const numTeams = parseInt(document.getElementById('numTeams').value);
+            const rotationInterval = parseInt(document.getElementById('rotationInterval').value);
+            const scheduleDays = parseInt(document.getElementById('scheduleDays').value);
+            
+            let errors = [];
+            
+            if (isNaN(numTeams) || numTeams < 1) {
+                errors.push('Number of teams must be at least 1');
+            }
+            
+            if (isNaN(rotationInterval) || rotationInterval < 1) {
+                errors.push('Rotation interval must be at least 1 day');
+            }
+            
+            if (isNaN(scheduleDays) || scheduleDays < 1) {
+                errors.push('Schedule duration must be at least 1 day');
+            }
+            
+            if (errors.length > 0) {
+                errorDiv.textContent = errors.join('. ');
+                errorDiv.style.display = 'block';
+                return false;
+            } else {
+                errorDiv.style.display = 'none';
+                return true;
+            }
+        }
+
+        /**
+         * Main function to generate the patrol schedule
+         * This handles all the logic for rotating teams through dates
+         */
+        function generateSchedule() {
+            // First validate all inputs
+            if (!validateInputs()) {
+                return;
+            }
+
+            // Get form values
+            const startDate = new Date(document.getElementById('startDate').value);
+            const numTeams = parseInt(document.getElementById('numTeams').value);
+            const rotationInterval = parseInt(document.getElementById('rotationInterval').value);
+            const scheduleDays = parseInt(document.getElementById('scheduleDays').value);
+            const teamNamesInput = document.getElementById('teamNames').value.trim();
+
+            // Validate start date
+            if (isNaN(startDate.getTime())) {
+                showError('Please select a valid start date');
+                return;
+            }
+
+            // Generate team names array
+            let teamNames = [];
+            if (teamNamesInput) {
+                // Use custom team names from textarea
+                teamNames = teamNamesInput.split('\n').map(name => name.trim()).filter(name => name);
+                
+                // If user provided fewer names than teams, fill the rest with auto-generated names
+                while (teamNames.length < numTeams) {
+                    teamNames.push(`Team ${teamNames.length + 1}`);
+                }
+            } else {
+                // Generate default team names
+                for (let i = 1; i <= numTeams; i++) {
+                    teamNames.push(`Team ${i}`);
+                }
+            }
+
+            // Generate the schedule data
+            const scheduleData = [];
+            let currentTeamIndex = 0;
+            let daysInCurrentRotation = 0;
+
+            // Loop through each day in the schedule duration
+            for (let dayOffset = 0; dayOffset < scheduleDays; dayOffset++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + dayOffset);
+                
+                // Format date for display
+                const dateString = currentDate.toISOString().split('T')[0];
+                const displayDate = currentDate.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+
+                // Add this day's assignment to the schedule
+                scheduleData.push({
+                    date: dateString,
+                    displayDate: displayDate,
+                    team: teamNames[currentTeamIndex],
+                    dayNumber: dayOffset + 1,
+                    isToday: isToday(currentDate)
+                });
+
+                // Move to next day in current rotation
+                daysInCurrentRotation++;
+
+                // Check if we need to rotate to the next team
+                if (daysInCurrentRotation >= rotationInterval) {
+                    currentTeamIndex = (currentTeamIndex + 1) % numTeams;
+                    daysInCurrentRotation = 0;
+                }
+            }
+
+            // Display the generated schedule
+            displaySchedule(scheduleData);
+            
+            // Generate export data
+            generateExportData(scheduleData);
+            
+            // Show the results section
+            document.getElementById('resultsSection').classList.add('show');
+            
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+
+        /**
+         * Check if a given date is today
+         * Used to highlight the current day in the schedule
+         */
+        function isToday(date) {
+            const today = new Date();
+            return date.toDateString() === today.toDateString();
+        }
+
+        /**
+         * Display the generated schedule in the table
+         * This creates the visual representation of the patrol rotation
+         */
+        function displaySchedule(scheduleData) {
+            const tableBody = document.getElementById('scheduleTableBody');
+            const nextShiftDiv = document.getElementById('nextShift');
+            
+            // Clear previous results
+            tableBody.innerHTML = '';
+            
+            // Find next shift (first future date or today)
+            const today = new Date();
+            const nextShift = scheduleData.find(item => {
+                const itemDate = new Date(item.date);
+                return itemDate >= today;
+            });
+
+            // Display next shift information
+            if (nextShift) {
+                nextShiftDiv.innerHTML = `
+                    <strong>🚨 Next Patrol:</strong> ${nextShift.team} on ${nextShift.displayDate}
+                `;
+            } else {
+                nextShiftDiv.innerHTML = `
+                    <strong>📋 Schedule Complete:</strong> All dates are in the past
+                `;
+            }
+
+            // Populate the table with schedule data
+            scheduleData.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Highlight today's row
+                if (item.isToday) {
+                    row.classList.add('today');
+                }
+                
+                row.innerHTML = `
+                    <td><strong>${item.displayDate}</strong><br><small>${item.date}</small></td>
+                    <td><strong>${item.team}</strong></td>
+                    <td>Day ${item.dayNumber}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        /**
+         * Generate CSV export data
+         * Creates both human-readable and machine-readable formats
+         */
+        function generateExportData(scheduleData) {
+            const exportTextarea = document.getElementById('exportTextarea');
+            
+            // Create CSV format: Date,Team,Day
+            let csvContent = 'Date,Team,Day\n';
+            scheduleData.forEach(item => {
+                csvContent += `${item.date},${item.team},${item.dayNumber}\n`;
+            });
+            
+            exportTextarea.value = csvContent;
+        }
+
+        /**
+         * Copy the CSV data to clipboard
+         * Provides easy way for users to paste data into other applications
+         */
+        async function copyToClipboard() {
+            const exportTextarea = document.getElementById('exportTextarea');
+            
+            try {
+                await navigator.clipboard.writeText(exportTextarea.value);
+                
+                // Show success feedback
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                button.style.background = 'linear-gradient(135deg, #27ae60 0%, #229954 100%)';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+                
+            } catch (err) {
+                console.error('Failed to copy to clipboard:', err);
+                
+                // Fallback: select the text for manual copying
+                exportTextarea.select();
+                exportTextarea.setSelectionRange(0, 99999);
+                
+                alert('Please manually copy the selected text (Ctrl+C or Cmd+C)');
+            }
+        }
+
+        /**
+         * Download the schedule as a CSV file
+         * Creates a downloadable file for offline use or sharing
+         */
+        function downloadCSV() {
+            const exportTextarea = document.getElementById('exportTextarea');
+            const csvContent = exportTextarea.value;
+            
+            // Create blob and download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            // Generate filename with current date
+            const today = new Date();
+            const dateString = today.toISOString().split('T')[0];
+            const filename = `night_patrol_schedule_${dateString}.csv`;
+            
+            // Create download
+            if (navigator.msSaveBlob) {
+                // IE 10+
+                navigator.msSaveBlob(blob, filename);
+            } else {
+                // Modern browsers
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            // Show success feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✅ Downloaded!';
+            button.style.background = 'linear-gradient(135deg, #27ae60 0%, #229954 100%)';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+            }, 2000);
+        }
+
+        /**
+         * Display error messages to the user
+         * Provides clear feedback when something goes wrong
+         */
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Scroll to error message
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    </script>
+</body>
+</html>
