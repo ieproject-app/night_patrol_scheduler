@@ -15,6 +15,8 @@
             --text-color: #212529;
             --border-color: #dee2e6;
             --highlight-color: #fff3cd;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
         }
 
         body {
@@ -86,7 +88,6 @@
         }
 
         .btn {
-            grid-column: 1 / -1; /* Tombol memenuhi lebar grid */
             padding: 12px 20px;
             margin-top: 15px;
             font-size: 1.1rem;
@@ -103,6 +104,30 @@
             background-color: #0056b3;
         }
         
+        .btn-success {
+            background-color: var(--success-color);
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
         /* --- Tampilan Output --- */
         #output {
             margin-top: 30px;
@@ -203,6 +228,27 @@
             padding-left: 20px;
             margin: 0;
         }
+        
+        /* Session controls */
+        .session-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .session-notification {
+            margin-top: 15px;
+            padding: 10px 15px;
+            border-radius: 4px;
+            background-color: #d4edda;
+            color: #155724;
+            display: none;
+        }
+        
+        .session-notification.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
 
         /* --- Style untuk Cetak (Print-Friendly) --- */
         @media print {
@@ -221,7 +267,7 @@
             }
             
             /* Sembunyikan elemen yang tidak perlu dicetak */
-            .form-container, .export-container, .btn, #ringkasanJadwal, h1 {
+            .form-container, .export-container, .btn, #ringkasanJadwal, h1, .session-controls, .session-notification {
                 display: none !important;
             }
             
@@ -286,6 +332,14 @@
                     </div>
                 </div>
                 <button type="submit" class="btn">Buat Jadwal</button>
+                
+                <div class="session-controls">
+                    <button type="button" id="saveSessionBtn" class="btn btn-success">Simpan Konfigurasi</button>
+                    <button type="button" id="loadSessionBtn" class="btn btn-secondary">Muat Konfigurasi</button>
+                    <button type="button" id="clearSessionBtn" class="btn btn-danger">Hapus Konfigurasi</button>
+                </div>
+                
+                <div id="sessionNotification" class="session-notification"></div>
             </form>
         </div>
 
@@ -329,7 +383,14 @@
         const jadwalContainerEl = document.getElementById('jadwalContainer');
         const exportTextEl = document.getElementById('exportText');
         const salinBtn = document.getElementById('salinBtn');
+        const saveSessionBtn = document.getElementById('saveSessionBtn');
+        const loadSessionBtn = document.getElementById('loadSessionBtn');
+        const clearSessionBtn = document.getElementById('clearSessionBtn');
+        const sessionNotification = document.getElementById('sessionNotification');
 
+        // Kunci untuk localStorage
+        const STORAGE_KEY = 'ronda_schedule_config';
+        
         // --- Inisialisasi & Pengaturan Default ---
         
         // Fungsi untuk memformat tanggal ke YYYY-MM-DD untuk input date picker
@@ -352,6 +413,9 @@
 
         tanggalMulaiEl.value = formatDateForInput(hariIni);
         tanggalBerakhirEl.value = formatDateForInput(tigaPuluhHariLagi);
+        
+        // Coba muat konfigurasi yang tersimpan saat halaman dimuat
+        loadSavedConfig();
         
         // --- Helper Functions ---
 
@@ -396,11 +460,102 @@
                    date.getMonth() === today.getMonth() &&
                    date.getFullYear() === today.getFullYear();
         };
+        
+        /**
+         * Menampilkan notifikasi session
+         * @param {string} message - Pesan yang akan ditampilkan
+         * @param {boolean} isError - Apakah notifikasi error (warna merah)
+         * @param {number} duration - Durasi tampil dalam milidetik (0 untuk permanen)
+         */
+        const showNotification = (message, isError = false, duration = 3000) => {
+            sessionNotification.textContent = message;
+            sessionNotification.style.display = 'block';
+            
+            if (isError) {
+                sessionNotification.classList.add('error');
+            } else {
+                sessionNotification.classList.remove('error');
+            }
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    sessionNotification.style.display = 'none';
+                }, duration);
+            }
+        };
+
+        // --- Fungsi untuk Session Management ---
+        
+        /**
+         * Menyimpan konfigurasi saat ini ke localStorage
+         */
+        const saveCurrentConfig = () => {
+            const config = {
+                tanggalMulai: tanggalMulaiEl.value,
+                tanggalBerakhir: tanggalBerakhirEl.value,
+                jumlahTim: jumlahTimEl.value,
+                interval: intervalEl.value,
+                namaTim: namaTimEl.value
+            };
+            
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+                showNotification('Konfigurasi berhasil disimpan!', false);
+                return true;
+            } catch (e) {
+                console.error('Gagal menyimpan ke localStorage:', e);
+                showNotification('Gagal menyimpan konfigurasi: ' + e.message, true);
+                return false;
+            }
+        };
+        
+        /**
+         * Memuat konfigurasi yang tersimpan dari localStorage
+         */
+        const loadSavedConfig = () => {
+            try {
+                const savedConfig = localStorage.getItem(STORAGE_KEY);
+                if (savedConfig) {
+                    const config = JSON.parse(savedConfig);
+                    
+                    tanggalMulaiEl.value = config.tanggalMulai;
+                    tanggalBerakhirEl.value = config.tanggalBerakhir;
+                    jumlahTimEl.value = config.jumlahTim;
+                    intervalEl.value = config.interval;
+                    namaTimEl.value = config.namaTim;
+                    
+                    showNotification('Konfigurasi berhasil dimuat!', false, 2000);
+                    return true;
+                }
+            } catch (e) {
+                console.error('Gagal memuat dari localStorage:', e);
+                showNotification('Gagal memuat konfigurasi: ' + e.message, true);
+            }
+            return false;
+        };
+        
+        /**
+         * Menghapus konfigurasi yang tersimpan
+         */
+        const clearSavedConfig = () => {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+                showNotification('Konfigurasi berhasil dihapus!', false);
+                return true;
+            } catch (e) {
+                console.error('Gagal menghapus dari localStorage:', e);
+                showNotification('Gagal menghapus konfigurasi: ' + e.message, true);
+                return false;
+            }
+        };
 
         // --- Event Listeners ---
         form.addEventListener('submit', function(event) {
             event.preventDefault(); // Mencegah form submit dan refresh halaman
-            buatJadwal();
+            if (buatJadwal()) {
+                // Jika pembuatan jadwal berhasil, simpan konfigurasi
+                saveCurrentConfig();
+            }
         });
 
         salinBtn.addEventListener('click', function() {
@@ -416,6 +571,20 @@
                 console.error('Gagal menyalin teks: ', err);
             });
         });
+        
+        saveSessionBtn.addEventListener('click', function() {
+            saveCurrentConfig();
+        });
+        
+        loadSessionBtn.addEventListener('click', function() {
+            loadSavedConfig();
+        });
+        
+        clearSessionBtn.addEventListener('click', function() {
+            if (confirm('Apakah Anda yakin ingin menghapus konfigurasi yang tersimpan?')) {
+                clearSavedConfig();
+            }
+        });
 
         // --- Fungsi Logika Utama ---
         function buatJadwal() {
@@ -425,6 +594,27 @@
             const jumlahTim = parseInt(jumlahTimEl.value, 10);
             const interval = parseInt(intervalEl.value, 10);
             
+            // Validasi input
+            if (isNaN(tanggalMulai.getTime()) || isNaN(tanggalBerakhir.getTime())) {
+                showNotification('Tanggal tidak valid!', true);
+                return false;
+            }
+            
+            if (tanggalBerakhir < tanggalMulai) {
+                showNotification('Tanggal berakhir harus setelah tanggal mulai!', true);
+                return false;
+            }
+            
+            if (jumlahTim < 1) {
+                showNotification('Jumlah tim minimal 1!', true);
+                return false;
+            }
+            
+            if (interval < 1) {
+                showNotification('Interval minimal 1 hari!', true);
+                return false;
+            }
+            
             let daftarNamaTim = namaTimEl.value.trim().split('\n').filter(nama => nama.trim() !== '');
             
             // 2. Jika nama tim kosong, buat nama default
@@ -433,6 +623,15 @@
                 for (let i = 1; i <= jumlahTim; i++) {
                     daftarNamaTim.push(`Tim ${i}`);
                 }
+            } else if (daftarNamaTim.length < jumlahTim) {
+                // Jika nama tim yang dimasukkan kurang dari jumlah tim, lengkapi dengan default
+                const timTambahan = jumlahTim - daftarNamaTim.length;
+                for (let i = 1; i <= timTambahan; i++) {
+                    daftarNamaTim.push(`Tim ${daftarNamaTim.length + i}`);
+                }
+            } else if (daftarNamaTim.length > jumlahTim) {
+                // Jika nama tim yang dimasukkan lebih dari jumlah tim, potong
+                daftarNamaTim = daftarNamaTim.slice(0, jumlahTim);
             }
             
             // 3. Buat daftar jadwal
@@ -456,6 +655,7 @@
 
             // 4. Render output ke halaman
             renderJadwal(jadwalLengkap);
+            return true;
         }
 
         // --- Fungsi Render ---
