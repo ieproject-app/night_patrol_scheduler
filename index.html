@@ -298,6 +298,7 @@
             body {
                 background: white;
                 padding: 0;
+                margin: 0;
             }
 
             .form-section,
@@ -310,36 +311,105 @@
             .container {
                 box-shadow: none;
                 border-radius: 0;
+                max-width: none;
+                margin: 0;
             }
 
             .header {
                 background: #2c3e50 !important;
                 -webkit-print-color-adjust: exact;
+                padding: 20px;
             }
 
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .results-section {
+                padding: 20px;
+            }
+
+            /* Pertahankan grid layout untuk print dengan optimasi ukuran */
             .table-grid {
-                grid-template-columns: 1fr !important;
-                gap: 30px;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                page-break-inside: avoid;
+            }
+
+            /* Untuk kertas landscape atau A4 yang lebar, gunakan 3 kolom */
+            @media print and (min-width: 800px) {
+                .table-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+
+            .table-section {
+                page-break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+
+            .table-header {
+                background: #f0f0f0 !important;
+                -webkit-print-color-adjust: exact;
+                font-size: 12px;
+                padding: 8px;
+                border-bottom: 2px solid #000;
             }
 
             .schedule-table {
-                font-size: 12px;
+                font-size: 10px;
+                width: 100%;
             }
 
             .schedule-table th,
             .schedule-table td {
-                padding: 8px;
-                border: 1px solid #000;
+                padding: 4px 6px;
+                border: 1px solid #666;
+                font-size: 10px;
+            }
+
+            .schedule-table th {
+                background: #f8f8f8 !important;
+                -webkit-print-color-adjust: exact;
+                font-weight: bold;
             }
 
             .today-row {
                 background: #f0f0f0 !important;
                 -webkit-print-color-adjust: exact;
+                border-left: 3px solid #000 !important;
             }
 
             .summary {
-                background: #28a745 !important;
+                background: #e8e8e8 !important;
                 -webkit-print-color-adjust: exact;
+                border: 2px solid #000;
+                color: #000 !important;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+
+            .summary h3 {
+                color: #000 !important;
+                font-size: 16px;
+            }
+
+            .summary p {
+                color: #000 !important;
+                font-size: 14px;
+            }
+
+            /* Pastikan tidak ada page break di tengah tabel */
+            .table-section {
+                break-inside: avoid;
+            }
+
+            /* Optimasi untuk orientasi kertas */
+            @page {
+                margin: 0.5in;
+                size: A4;
             }
         }
 
