@@ -1,333 +1,627 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Penjadwal Ronda Malam - Simple</title>
-    <style>
-        /* Base styles */
-        :root {
-            --primary: #2563eb;
-            --secondary: #64748b;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --error: #ef4444;
-            --surface: #ffffff;
-            --background: #f1f5f9;
-            --text: #0f172a;
-            --border: #e2e8f0;
-            --radius: 8px;
-            --shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: var(--background);
-            color: var(--text);
-            line-height: 1.5;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: var(--surface);
-            padding: 20px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-        }
-
-        /* Form styles */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        input, select, textarea {
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            font-size: 14px;
-        }
-
-        .btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--radius);
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .btn-secondary {
-            background: var(--secondary);
-        }
-
-        /* Schedule display */
-        .schedule-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .schedule-card {
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 15px;
-        }
-
-        .today {
-            background: #fef3c7;
-            border-color: var(--warning);
-        }
-
-        /* Import/Export */
-        .import-export {
-            margin-top: 20px;
-            padding: 15px;
-            background: var(--background);
-            border-radius: var(--radius);
-        }
-
-        #importData {
-            width: 100%;
-            min-height: 100px;
-            margin: 10px 0;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Ronda Scheduler</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <h1>📋 Penjadwal Ronda Malam</h1>
+<body class="p-4 bg-gray-50 min-h-screen">
+  <!-- Semua UI akan di-render JS -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest.js"></script>
+  <script>
+  // ==== RondaGenerator.js ====
+  class RondaGenerator {
+    /**
+     * Inisialisasi state scheduler
+     * @param {Object} state - Opsi initial state (opsional)
+     */
+    constructor(state = {}) {
+      this.startDate = state.startDate ? new Date(state.startDate) : null;
+      this.endDate = state.endDate ? new Date(state.endDate) : null;
+      this.teamNames = Array.isArray(state.teamNames) ? state.teamNames.slice() : [];
+      this.rotateInterval = state.rotateInterval || 1;
+      this.showWeekend = state.showWeekend ?? true;
+      this.holidays = Array.isArray(state.holidays) ? state.holidays.slice() : [];
+      this.schedule = []; // Array of {date, team}
+    }
+
+    /**
+     * Validasi state sebelum generate
+     * @returns {string[]} daftar pesan error, [] jika valid
+     */
+    validate() {
+      const errors = [];
+      if (!this.startDate || !this.endDate || isNaN(this.startDate) || isNaN(this.endDate))
+        errors.push('Tanggal mulai dan akhir wajib diisi.');
+      if (this.startDate && this.endDate && this.startDate > this.endDate)
+        errors.push('Tanggal mulai tidak boleh setelah tanggal akhir.');
+      if (this.teamNames.length < 1)
+        errors.push('Minimal ada 1 tim.');
+      if (new Set(this.teamNames.map(n => n.trim().toLowerCase())).size !== this.teamNames.length)
+        errors.push('Nama tim tidak boleh duplikat.');
+      if (this.rotateInterval < 1)
+        errors.push('Interval rotasi minimal 1 hari.');
+      return errors;
+    }
+
+    /**
+     * Generate jadwal berdasarkan state
+     * @returns {Array} schedule array: [{date: Date, team: String}]
+     */
+    generate() {
+      const errors = this.validate();
+      if (errors.length) throw new Error(errors.join('\n'));
+
+      const schedule = [];
+      const { startDate, endDate, teamNames, rotateInterval, showWeekend, holidays } = this;
+      const teamCount = teamNames.length;
+      let currentTeamIdx = 0;
+      let rotateCounter = 0;
+
+      // Sort holidays jadi string YYYY-MM-DD utk lookup cepat
+      const holidaySet = new Set((holidays || []).map(d => this._toYMDString(new Date(d))));
+
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const day = d.getDay();
+        const isWeekend = (day === 0 || day === 6);
+        const dateStr = this._toYMDString(d);
+        if (!showWeekend && isWeekend) continue;
+        const isHoliday = holidaySet.has(dateStr);
+
+        schedule.push({
+          date: new Date(d),
+          team: teamNames[currentTeamIdx],
+          isWeekend,
+          isHoliday
+        });
+
+        rotateCounter++;
+        if (rotateCounter >= rotateInterval) {
+          currentTeamIdx = (currentTeamIdx + 1) % teamCount;
+          rotateCounter = 0;
+        }
+      }
+      this.schedule = schedule;
+      return schedule;
+    }
+
+    /**
+     * Statistik distribusi beban tugas
+     * @returns {Object} { teamName: jumlahTugas }
+     */
+    getStats() {
+      const stats = {};
+      this.teamNames.forEach(t => stats[t] = 0);
+      this.schedule.forEach(s => {
+        if (stats[s.team] !== undefined) stats[s.team]++;
+      });
+      return stats;
+    }
+
+    /**
+     * Filter schedule berdasar tim/bulan/pencarian tanggal
+     * @param {Object} param0 {team, month, date, q}
+     * @returns {Array} array hasil filter
+     */
+    filterSchedule({ team, month, date, q } = {}) {
+      let result = this.schedule.slice();
+      if (team) {
+        result = result.filter(s => s.team === team);
+      }
+      if (typeof month === 'number') {
+        result = result.filter(s => s.date.getMonth() === month);
+      }
+      if (date) {
+        const searchDate = this._toYMDString(new Date(date));
+        result = result.filter(s => this._toYMDString(s.date) === searchDate);
+      }
+      if (q) {
+        const qlc = q.trim().toLowerCase();
+        result = result.filter(
+          s => s.team.toLowerCase().includes(qlc) ||
+          this._toYMDString(s.date).includes(qlc)
+        );
+      }
+      return result;
+    }
+
+    /**
+     * Export seluruh state dan jadwal ke objek JSON
+     */
+    exportState() {
+      return {
+        startDate: this.startDate ? this._toYMDString(this.startDate) : '',
+        endDate: this.endDate ? this._toYMDString(this.endDate) : '',
+        teamNames: this.teamNames.slice(),
+        rotateInterval: this.rotateInterval,
+        showWeekend: this.showWeekend,
+        holidays: this.holidays.slice(),
+        schedule: this.schedule.map(s => ({
+          date: this._toYMDString(s.date),
+          team: s.team,
+          isWeekend: s.isWeekend,
+          isHoliday: s.isHoliday
+        }))
+      };
+    }
+
+    /**
+     * Import state dari objek JSON
+     * @param {Object} jsonData
+     */
+    importState(jsonData) {
+      this.startDate = jsonData.startDate ? new Date(jsonData.startDate) : null;
+      this.endDate = jsonData.endDate ? new Date(jsonData.endDate) : null;
+      this.teamNames = Array.isArray(jsonData.teamNames) ? jsonData.teamNames.slice() : [];
+      this.rotateInterval = jsonData.rotateInterval || 1;
+      this.showWeekend = jsonData.showWeekend ?? true;
+      this.holidays = Array.isArray(jsonData.holidays) ? jsonData.holidays.slice() : [];
+      this.schedule = Array.isArray(jsonData.schedule)
+        ? jsonData.schedule.map(s => ({
+          date: new Date(s.date),
+          team: s.team,
+          isWeekend: !!s.isWeekend,
+          isHoliday: !!s.isHoliday
+        }))
+        : [];
+    }
+
+    /**
+     * Helper: Konversi Date ke string YYYY-MM-DD
+     * @param {Date} date
+     */
+    _toYMDString(date) {
+      if (!(date instanceof Date)) return '';
+      return date.toISOString().slice(0, 10);
+    }
+  }
+
+  // ==== RondaUI.js ====
+  class RondaUI {
+    /**
+     * @param {RondaGenerator} generator
+     */
+    constructor(generator) {
+      this.gen = generator;
+      this.$ = {};
+      this.toastTimeout = null;
+      this.initUI();
+      this.bindEvents();
+      this.render();
+    }
+
+    /**
+     * Inisialisasi elemen dan form
+     */
+    initUI() {
+      document.body.innerHTML = `
+      <div class="max-w-3xl mx-auto space-y-6">
+        <h1 class="text-2xl font-bold text-center mb-2">Ronda Scheduler</h1>
         
-        <div class="form-grid">
-            <div class="form-group">
-                <label>📅 Tanggal Mulai</label>
-                <input type="date" id="startDate" required>
-            </div>
-            <div class="form-group">
-                <label>📅 Tanggal Selesai</label>
-                <input type="date" id="endDate" required>
-            </div>
-            <div class="form-group">
-                <label>👥 Jumlah Tim</label>
-                <input type="number" id="teamCount" value="16" min="1" required>
-            </div>
-            <div class="form-group">
-                <label>⏰ Interval (hari)</label>
-                <input type="number" id="interval" value="1" min="1" required>
-            </div>
+        <form id="inputForm" class="bg-white shadow rounded p-4 flex flex-wrap gap-4 items-end">
+          <div>
+            <label class="block text-xs mb-1">Tanggal Mulai</label>
+            <input type="date" id="startDate" class="border rounded px-2 py-1" required>
+          </div>
+          <div>
+            <label class="block text-xs mb-1">Tanggal Akhir</label>
+            <input type="date" id="endDate" class="border rounded px-2 py-1" required>
+          </div>
+          <div>
+            <label class="block text-xs mb-1">Jumlah Tim</label>
+            <input type="number" min="1" id="teamCount" class="border rounded px-2 py-1 w-20" value="2">
+          </div>
+          <div class="flex-1 min-w-[120px]">
+            <label class="block text-xs mb-1">Nama Tim (opsional, pisahkan koma)</label>
+            <input type="text" id="teamNames" class="border rounded px-2 py-1 w-full" placeholder="Tim A, Tim B">
+          </div>
+          <div>
+            <label class="block text-xs mb-1">Interval Rotasi (hari)</label>
+            <input type="number" min="1" id="rotateInterval" class="border rounded px-2 py-1 w-20" value="1">
+          </div>
+          <div>
+            <label class="block text-xs mb-1">Akhir Pekan</label>
+            <input type="checkbox" id="showWeekend" class="ml-1" checked>
+          </div>
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Buat Jadwal</button>
+        </form>
+
+        <div class="flex gap-2 items-center flex-wrap">
+          <button id="exportBtn" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Export XLSX</button>
+          <label class="inline-block">
+            <span class="text-xs mr-1">Import XLSX</span>
+            <input type="file" id="importFile" class="hidden" accept=".xlsx">
+            <button type="button" id="importBtn" class="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700">Pilih File</button>
+          </label>
+          <input type="text" id="searchInput" class="border rounded px-2 py-1" placeholder="Cari tanggal/nama tim...">
+          <select id="filterTeam" class="border rounded px-2 py-1">
+            <option value="">Semua Tim</option>
+          </select>
+          <select id="filterMonth" class="border rounded px-2 py-1">
+            <option value="">Semua Bulan</option>
+          </select>
         </div>
 
-        <div class="form-group">
-            <label>📝 Nama Tim (satu per baris)</label>
-            <textarea id="teamNames" rows="5" placeholder="Tim 1&#10;Tim 2&#10;Tim 3"></textarea>
+        <div id="calendarContainer" class="bg-white shadow rounded p-4"></div>
+        <div id="listContainer" class="bg-white shadow rounded p-4"></div>
+        <div id="statsContainer" class="bg-white shadow rounded p-4"></div>
+      </div>
+      <div id="toast" class="fixed z-50 right-4 bottom-4 bg-gray-900 text-white px-4 py-2 rounded shadow opacity-0 pointer-events-none transition"></div>
+      `;
+      this.$.form = document.getElementById('inputForm');
+      this.$.startDate = document.getElementById('startDate');
+      this.$.endDate = document.getElementById('endDate');
+      this.$.teamCount = document.getElementById('teamCount');
+      this.$.teamNames = document.getElementById('teamNames');
+      this.$.rotateInterval = document.getElementById('rotateInterval');
+      this.$.showWeekend = document.getElementById('showWeekend');
+      this.$.exportBtn = document.getElementById('exportBtn');
+      this.$.importBtn = document.getElementById('importBtn');
+      this.$.importFile = document.getElementById('importFile');
+      this.$.searchInput = document.getElementById('searchInput');
+      this.$.filterTeam = document.getElementById('filterTeam');
+      this.$.filterMonth = document.getElementById('filterMonth');
+      this.$.calendar = document.getElementById('calendarContainer');
+      this.$.list = document.getElementById('listContainer');
+      this.$.stats = document.getElementById('statsContainer');
+      this.$.toast = document.getElementById('toast');
+    }
+
+    /**
+     * Binding event UI
+     */
+    bindEvents() {
+      // Form submit
+      this.$.form.addEventListener('submit', e => {
+        e.preventDefault();
+        this.onFormSubmit();
+      });
+
+      // Export
+      this.$.exportBtn.addEventListener('click', () => this.exportXLSX());
+
+      // Import
+      this.$.importBtn.addEventListener('click', () => this.$.importFile.click());
+      this.$.importFile.addEventListener('change', e => {
+        if (e.target.files && e.target.files[0]) this.importXLSX(e.target.files[0]);
+      });
+
+      // Filter & search
+      this.$.searchInput.addEventListener('input', () => this.render());
+      this.$.filterTeam.addEventListener('change', () => this.render());
+      this.$.filterMonth.addEventListener('change', () => this.render());
+    }
+
+    /**
+     * Handler submit form input
+     */
+    onFormSubmit() {
+      const startDate = this.$.startDate.value;
+      const endDate = this.$.endDate.value;
+      const teamCount = parseInt(this.$.teamCount.value, 10) || 1;
+      const teamNamesRaw = this.$.teamNames.value.trim();
+      const rotateInterval = parseInt(this.$.rotateInterval.value, 10) || 1;
+      const showWeekend = this.$.showWeekend.checked;
+      let teamNames = teamNamesRaw
+        ? teamNamesRaw.split(',').map(s => s.trim()).filter(Boolean)
+        : Array.from({ length: teamCount }, (_, i) => `Tim ${String.fromCharCode(65 + i)}`);
+
+      if (teamNames.length !== teamCount) {
+        this.showToast('Jumlah nama tim tidak sama dengan jumlah tim', true);
+        return;
+      }
+
+      this.gen.startDate = startDate ? new Date(startDate) : null;
+      this.gen.endDate = endDate ? new Date(endDate) : null;
+      this.gen.teamNames = teamNames;
+      this.gen.rotateInterval = rotateInterval;
+      this.gen.showWeekend = showWeekend;
+
+      try {
+        this.gen.generate();
+        this.showToast('Jadwal berhasil dibuat');
+        this.render();
+      } catch (e) {
+        this.showToast(e.message, true);
+      }
+    }
+
+    /**
+     * Render semua tampilan: kalender, list, stats
+     */
+    render() {
+      this.renderFilters();
+      this.renderCalendar();
+      this.renderList();
+      this.renderStats();
+    }
+
+    /**
+     * Render dropdown filter tim/bulan
+     */
+    renderFilters() {
+      const teams = this.gen.teamNames;
+      this.$.filterTeam.innerHTML =
+        `<option value="">Semua Tim</option>` +
+        teams.map(t => `<option value="${t}">${t}</option>`).join('');
+
+      const months = [...new Set(this.gen.schedule.map(s => s.date.getMonth()))];
+      this.$.filterMonth.innerHTML =
+        `<option value="">Semua Bulan</option>` +
+        months.map(m => `<option value="${m}">${this.monthName(m)}</option>`).join('');
+    }
+
+    /**
+     * Render kalender bulanan interaktif
+     */
+    renderCalendar() {
+      if (!this.gen.schedule.length) {
+        this.$.calendar.innerHTML = '<p class="text-gray-500 text-center">Belum ada jadwal</p>';
+        return;
+      }
+      const month = this.$.filterMonth.value === '' ? null : parseInt(this.$.filterMonth.value, 10);
+      const team = this.$.filterTeam.value || null;
+      const q = this.$.searchInput.value.trim();
+      const filtered = this.gen.filterSchedule({ team, month, q });
+
+      const grouped = new Map();
+      filtered.forEach(s => {
+        const ym = `${s.date.getFullYear()}-${s.date.getMonth()}`;
+        if (!grouped.has(ym)) grouped.set(ym, []);
+        grouped.get(ym).push(s);
+      });
+
+      let html = '';
+      grouped.forEach((schedules, ym) => {
+        const [year, m] = ym.split('-').map(Number);
+        html += this.renderMonthCalendar(schedules, year, m);
+      });
+
+      this.$.calendar.innerHTML = html;
+    }
+
+    /**
+     * Render satu bulan kalender
+     * @param {Array} schedules
+     * @param {number} year
+     * @param {number} month
+     */
+    renderMonthCalendar(schedules, year, month) {
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const firstDayIdx = new Date(year, month, 1).getDay(); // 0: Minggu
+      const dateMap = {};
+      schedules.forEach(s => {
+        dateMap[s.date.getDate()] = s;
+      });
+
+      let rows = '';
+      let day = 1;
+      for (let w = 0; w < 6 && day <= daysInMonth; w++) {
+        let row = '';
+        for (let d = 0; d < 7; d++) {
+          if (w === 0 && d < firstDayIdx) {
+            row += `<td></td>`;
+          } else if (day > daysInMonth) {
+            row += `<td></td>`;
+          } else {
+            const sched = dateMap[day];
+            let cellClass = 'border text-center p-1 text-xs';
+            if (sched) {
+              if (sched.isWeekend) cellClass += ' bg-gray-100';
+              if (sched.isHoliday) cellClass += ' bg-yellow-100 border-yellow-400';
+            }
+            row += `<td class="${cellClass}">
+              <div class="font-semibold">${day}</div>
+              <div>${sched ? sched.team : ''}</div>
+            </td>`;
+            day++;
+          }
+        }
+        rows += `<tr>${row}</tr>`;
+      }
+
+      return `
+        <div class="mb-6">
+          <h3 class="font-semibold text-lg mb-2">${this.monthName(month)} ${year}</h3>
+          <table class="w-full border-collapse mb-2">
+            <thead>
+              <tr>
+                <th class="border p-1">Minggu</th>
+                <th class="border p-1">Senin</th>
+                <th class="border p-1">Selasa</th>
+                <th class="border p-1">Rabu</th>
+                <th class="border p-1">Kamis</th>
+                <th class="border p-1">Jumat</th>
+                <th class="border p-1">Sabtu</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="text-xs text-gray-500">
+            <span class="inline-block w-3 h-3 bg-gray-100 border mr-1"></span> Akhir pekan
+            <span class="inline-block w-3 h-3 bg-yellow-100 border-yellow-400 border ml-3 mr-1"></span> Libur nasional
+          </div>
         </div>
+      `;
+    }
 
-        <div class="button-group">
-            <button class="btn" onclick="generateSchedule()">Buat Jadwal</button>
-            <button class="btn btn-secondary" onclick="showImportExport()">Import/Export Data</button>
-        </div>
+    /**
+     * Render daftar jadwal per tim
+     */
+    renderList() {
+      if (!this.gen.schedule.length) {
+        this.$.list.innerHTML = '';
+        return;
+      }
+      const team = this.$.filterTeam.value || null;
+      const month = this.$.filterMonth.value === '' ? null : parseInt(this.$.filterMonth.value, 10);
+      const q = this.$.searchInput.value.trim();
+      const filtered = this.gen.filterSchedule({ team, month, q });
 
-        <div id="importExportSection" class="import-export" style="display: none;">
-            <h3>Import/Export Data</h3>
-            <textarea id="importData" placeholder="Paste data jadwal di sini untuk import..."></textarea>
-            <div class="button-group">
-                <button class="btn" onclick="importSchedule()">Import</button>
-                <button class="btn" onclick="exportSchedule()">Export</button>
-            </div>
-        </div>
+      let html = `
+        <h3 class="font-semibold text-lg mb-2">Daftar Jadwal</h3>
+        <div class="overflow-x-auto">
+        <table class="min-w-full border">
+          <thead>
+            <tr>
+              <th class="border p-1 text-xs">Tanggal</th>
+              <th class="border p-1 text-xs">Hari</th>
+              <th class="border p-1 text-xs">Tim</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      filtered.forEach(s => {
+        html += `<tr>
+          <td class="border p-1">${this.dateStr(s.date)}</td>
+          <td class="border p-1">${this.dayName(s.date.getDay())}${s.isHoliday ? ' (Libur)' : ''}</td>
+          <td class="border p-1">${s.team}</td>
+        </tr>`;
+      });
+      html += `</tbody></table></div>`;
+      this.$.list.innerHTML = html;
+    }
 
-        <div id="scheduleOutput" class="schedule-grid"></div>
-    </div>
+    /**
+     * Render statistik distribusi tugas
+     */
+    renderStats() {
+      if (!this.gen.schedule.length) {
+        this.$.stats.innerHTML = '';
+        return;
+      }
+      const stats = this.gen.getStats();
+      let html = `<h3 class="font-semibold text-lg mb-2">Statistik Beban Tugas</h3>
+        <ul class="flex flex-wrap gap-4">`;
+      Object.entries(stats).forEach(([team, count]) => {
+        html += `<li class="p-2 border rounded bg-gray-50"><b>${team}</b>: ${count} hari</li>`;
+      });
+      html += '</ul>';
+      this.$.stats.innerHTML = html;
+    }
 
-    <script>
-        // Global state
-        let currentSchedule = null;
+    /**
+     * Export ke file XLSX seluruh state & jadwal
+     */
+    exportXLSX() {
+      const state = this.gen.exportState();
+      const rows = [
+        ['Tanggal', 'Hari', 'Tim', 'Akhir Pekan', 'Libur Nasional'],
+        ...state.schedule.map(s => [
+          s.date,
+          this.dayName(new Date(s.date).getDay()),
+          s.team,
+          s.isWeekend ? 'Ya' : '',
+          s.isHoliday ? 'Ya' : ''
+        ])
+      ];
+      const meta = [
+        ['startDate', state.startDate],
+        ['endDate', state.endDate],
+        ['teamNames', state.teamNames.join(', ')],
+        ['rotateInterval', state.rotateInterval],
+        ['showWeekend', state.showWeekend ? 'Ya' : 'Tidak'],
+        ['holidays', state.holidays.join(', ')]
+      ];
 
-        // Initialize dates
-        window.onload = () => {
-            const today = new Date();
-            const thirtyDaysLater = new Date();
-            thirtyDaysLater.setDate(today.getDate() + 30);
+      const wb = XLSX.utils.book_new();
+      wb.Props = { Title: "Jadwal Ronda", CreatedDate: new Date() };
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Jadwal");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(meta), "State");
+      XLSX.writeFile(wb, "jadwal_ronda.xlsx");
+      this.showToast('Export sukses');
+    }
 
-            document.getElementById('startDate').value = formatDate(today);
-            document.getElementById('endDate').value = formatDate(thirtyDaysLater);
-        };
+    /**
+     * Import dari file XLSX
+     * @param {File} file
+     */
+    async importXLSX(file) {
+      try {
+        const data = await file.arrayBuffer();
+        const wb = XLSX.read(data, { type: 'array' });
+        const metaSheet = wb.Sheets['State'];
+        const meta = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
+        const state = {};
+        meta.forEach(row => {
+          if (!row[0]) return;
+          if (row[0] === 'teamNames' || row[0] === 'holidays')
+            state[row[0]] = (row[1] || '').split(',').map(s => s.trim()).filter(Boolean);
+          else if (row[0] === 'rotateInterval')
+            state[row[0]] = parseInt(row[1], 10) || 1;
+          else if (row[0] === 'showWeekend')
+            state[row[0]] = (row[1] === 'Ya');
+          else
+            state[row[0]] = row[1];
+        });
+        const jadwalSheet = wb.Sheets['Jadwal'];
+        const jadwal = XLSX.utils.sheet_to_json(jadwalSheet, { header: 1, defval: '' });
+        state.schedule = (jadwal.slice(1) || []).map(row => ({
+          date: row[0],
+          team: row[2],
+          isWeekend: row[3] === 'Ya',
+          isHoliday: row[4] === 'Ya'
+        }));
 
-        function formatDate(date) {
-            return date.toISOString().split('T')[0];
-        }
+        this.gen.importState(state);
+        this.showToast('Import sukses');
+        this.render();
+      } catch (e) {
+        this.showToast('Import gagal: ' + e.message, true);
+      }
+    }
 
-        function formatDisplayDate(date) {
-            return new Date(date).toLocaleDateString('id-ID', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
+    /**
+     * Tampilkan toast notifikasi
+     * @param {string} msg
+     * @param {boolean} error
+     */
+    showToast(msg, error = false) {
+      this.$.toast.textContent = msg;
+      this.$.toast.className =
+        'fixed z-50 right-4 bottom-4 px-4 py-2 rounded shadow transition ' +
+        (error ? 'bg-red-700 text-white' : 'bg-gray-900 text-white');
+      this.$.toast.style.opacity = 1;
+      this.$.toast.style.pointerEvents = 'auto';
+      if (this.toastTimeout) clearTimeout(this.toastTimeout);
+      this.toastTimeout = setTimeout(() => {
+        this.$.toast.style.opacity = 0;
+        this.$.toast.style.pointerEvents = 'none';
+      }, 2500);
+    }
 
-        function generateSchedule() {
-            const startDate = new Date(document.getElementById('startDate').value);
-            const endDate = new Date(document.getElementById('endDate').value);
-            const teamCount = parseInt(document.getElementById('teamCount').value);
-            const interval = parseInt(document.getElementById('interval').value);
-            let teamNames = document.getElementById('teamNames').value
-                .trim()
-                .split('\n')
-                .filter(name => name.trim());
+    /**
+     * Nama bulan lokal
+     */
+    monthName(idx) {
+      return [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ][idx] || '-';
+    }
+    /**
+     * Nama hari lokal
+     */
+    dayName(idx) {
+      return [
+        'Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'
+      ][idx] || '-';
+    }
+    /**
+     * Format tanggal
+     */
+    dateStr(date) {
+      if (!(date instanceof Date)) date = new Date(date);
+      return date.toISOString().slice(0, 10);
+    }
+  }
 
-            // Generate default team names if none provided
-            if (teamNames.length === 0) {
-                teamNames = Array.from({length: teamCount}, (_, i) => `Tim ${i + 1}`);
-            }
-
-            // Generate schedule
-            const schedule = [];
-            let currentDate = new Date(startDate);
-            let teamIndex = 0;
-
-            while (currentDate <= endDate) {
-                const currentTeam = teamNames[teamIndex % teamNames.length];
-                
-                schedule.push({
-                    date: new Date(currentDate),
-                    team: currentTeam
-                });
-
-                currentDate.setDate(currentDate.getDate() + interval);
-                teamIndex++;
-            }
-
-            currentSchedule = schedule;
-            displaySchedule(schedule);
-            return schedule;
-        }
-
-        function displaySchedule(schedule) {
-            const output = document.getElementById('scheduleOutput');
-            output.innerHTML = '';
-
-            if (!schedule || schedule.length === 0) {
-                output.innerHTML = '<p>Tidak ada jadwal untuk ditampilkan.</p>';
-                return;
-            }
-
-            // Group by month
-            const scheduleByMonth = {};
-            schedule.forEach(item => {
-                const monthYear = item.date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-                if (!scheduleByMonth[monthYear]) {
-                    scheduleByMonth[monthYear] = [];
-                }
-                scheduleByMonth[monthYear].push(item);
-            });
-
-            // Display each month
-            for (const [month, items] of Object.entries(scheduleByMonth)) {
-                const monthContainer = document.createElement('div');
-                monthContainer.className = 'schedule-card';
-                monthContainer.innerHTML = `<h3>${month}</h3>`;
-
-                items.forEach(item => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = isToday(item.date) ? 'today' : '';
-                    itemDiv.innerHTML = `
-                        <p><strong>${formatDisplayDate(item.date)}</strong></p>
-                        <p>👥 ${item.team}</p>
-                    `;
-                    monthContainer.appendChild(itemDiv);
-                });
-
-                output.appendChild(monthContainer);
-            }
-        }
-
-        function isToday(date) {
-            const today = new Date();
-            return date.toDateString() === today.toDateString();
-        }
-
-        function showImportExport() {
-            const section = document.getElementById('importExportSection');
-            section.style.display = section.style.display === 'none' ? 'block' : 'none';
-        }
-
-        function exportSchedule() {
-            if (!currentSchedule) {
-                alert('Buat jadwal terlebih dahulu sebelum mengekspor!');
-                return;
-            }
-
-            const exportData = {
-                version: '1.0',
-                timestamp: new Date().toISOString(),
-                schedule: currentSchedule.map(item => ({
-                    date: item.date.toISOString(),
-                    team: item.team
-                }))
-            };
-
-            document.getElementById('importData').value = JSON.stringify(exportData, null, 2);
-        }
-
-        function importSchedule() {
-            try {
-                const data = JSON.parse(document.getElementById('importData').value);
-                
-                if (!data.schedule || !Array.isArray(data.schedule)) {
-                    throw new Error('Invalid data format');
-                }
-
-                const schedule = data.schedule.map(item => ({
-                    date: new Date(item.date),
-                    team: item.team
-                }));
-
-                currentSchedule = schedule;
-                displaySchedule(schedule);
-
-                // Update form fields based on imported data
-                if (schedule.length > 0) {
-                    document.getElementById('startDate').value = formatDate(schedule[0].date);
-                    document.getElementById('endDate').value = formatDate(schedule[schedule.length - 1].date);
-                    
-                    // Extract unique team names
-                    const teamNames = [...new Set(schedule.map(item => item.team))];
-                    document.getElementById('teamNames').value = teamNames.join('\n');
-                    document.getElementById('teamCount').value = teamNames.length;
-                }
-
-                alert('Jadwal berhasil diimpor!');
-            } catch (error) {
-                alert('Gagal mengimpor data. Pastikan format data sudah benar.');
-                console.error('Import error:', error);
-            }
-        }
-    </script>
+  // ==== Inisialisasi ====
+  window.addEventListener('DOMContentLoaded', () => {
+    const gen = new RondaGenerator();
+    window.rondaUI = new RondaUI(gen);
+  });
+  </script>
 </body>
 </html>
